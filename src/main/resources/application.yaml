@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: koog-boot-playground
+  mvc:
+    async:
+      request-timeout: 5m
 
 ai:
   koog:

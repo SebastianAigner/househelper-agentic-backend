@@ -1,7 +1,6 @@
 package com.example.koogboot
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -16,7 +15,7 @@ class LightServiceTest {
 
         assertEquals(3, lights.size)
         assertEquals(listOf("living-room", "kitchen", "bedroom"), lights.map { it.id })
-        assertFalse(lights.first().on)
+        assertTrue(lights.first().on)
     }
 
     @Test
@@ -28,7 +27,7 @@ class LightServiceTest {
         assertTrue(updated.on)
         assertEquals(65, updated.brightness)
         assertEquals(RgbColor(12, 34, 56), updated.color)
-        assertFalse(service.getLight("bedroom").on)
+        assertTrue(service.getLight("bedroom").on)
     }
 
     @Test

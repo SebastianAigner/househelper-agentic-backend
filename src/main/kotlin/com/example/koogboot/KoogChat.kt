@@ -31,16 +31,31 @@ val ClaudeSonnet5: LLModel = LLModel(
     maxOutputTokens = 64_000,
 )
 
+sealed interface ChatStreamEvent {
+    data class Text(val text: String) : ChatStreamEvent
+    data class ToolCall(val text: String) : ChatStreamEvent
+}
+
 @Service
 class ChatService(
     @Qualifier("anthropicExecutor")
     private val executor: PromptExecutor,
     lightService: LightService,
+    applianceService: ApplianceService,
 ) {
+
+    private val systemPrompt = """
+        You are a helpful home assistant. Use the available tools to perform requested actions.
+        Complete every requested action before replying. Use one individual tool call per affected light.
+        When setting a light's color, turn it on unless the user explicitly asks you not to.
+        Never claim that you performed or will perform an action unless you actually invoke the required tool first.
+        Avoid markdown bold or italic formatting.
+    """.trimIndent()
 
     private val toolRegistry = ToolRegistry {
         tools(WeatherTools().asTools())
         tools(LightTools(lightService).asTools())
+        tools(ApplianceTools(applianceService).asTools())
     }
 
     private val strategy = functionalStrategy<String, String> { input ->
@@ -63,14 +78,45 @@ class ChatService(
         llmModel = ClaudeSonnet5,
         toolRegistry = toolRegistry,
         strategy = strategy,
-        systemPrompt = """
-            You are a helpful home assistant. Use the available tools to perform requested actions.
-            Complete every requested action before replying. Use one individual tool call per affected light.
-            When setting a light's color, turn it on unless the user explicitly asks you not to.
-            Never claim that you performed or will perform an action unless you actually invoke the required tool first.
-            Avoid markdown bold or italic formatting.
-        """.trimIndent(),
+        systemPrompt = systemPrompt,
     )
 
     suspend fun chat(message: String): String = agent.run(message)
+
+    suspend fun streamChat(message: String, emit: suspend (ChatStreamEvent) -> Unit) {
+        val streamingStrategy = functionalStrategy<String, String> { input ->
+            var response = requestLLM(input)
+            var iterations = 0
+
+            while (true) {
+                response.parts.forEach { part ->
+                    when (part) {
+                        is MessagePart.Text -> part.text.chunked(48).forEach { chunk ->
+                            emit(ChatStreamEvent.Text(chunk))
+                        }
+                        is MessagePart.Tool.Call -> emit(ChatStreamEvent.ToolCall("${part.tool} ${part.args}"))
+                        else -> Unit
+                    }
+                }
+
+                val toolCalls = response.parts.filterIsInstance<MessagePart.Tool.Call>()
+                if (toolCalls.isEmpty()) break
+
+                check(++iterations <= 50) { "Agent exceeded the tool-call limit" }
+                response = sendToolResults(executeTools(toolCalls))
+            }
+
+            response.parts.filterIsInstance<MessagePart.Text>()
+                .joinToString(separator = "\n") { it.text }
+        }
+        val streamingAgent = AIAgent(
+            promptExecutor = executor,
+            llmModel = ClaudeSonnet5,
+            toolRegistry = toolRegistry,
+            strategy = streamingStrategy,
+            systemPrompt = systemPrompt,
+        )
+
+        streamingAgent.run(message)
+    }
 }
