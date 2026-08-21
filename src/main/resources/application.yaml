@@ -1,0 +1,12 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: koog-boot-playground
+
+ai:
+  koog:
+    anthropic:
+      enabled: true
+      api-key: ${ANTHROPIC_API_KEY}
