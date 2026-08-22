@@ -92,6 +92,7 @@ class PowerSaveService(
             Always inspect all available devices before acting, then use the tools to make sensible trade-offs.
             Individual device wattages are unavailable to you. Never ask for or invent individual wattages.
             The functional strategy will calculate aggregate consumption after each action round and ask you to retry if needed.
+            Write your final response in English, followed by a Japanese translation.
             Avoid markdown bold or italic formatting in your responses.
         """.trimIndent(),
     )
@@ -126,7 +127,7 @@ class PowerSaveService(
     """.trimIndent()
 
     private companion object {
-        const val MAX_RETRIES = 5
+        const val MAX_RETRIES = 9
         const val MAX_TOOL_ITERATIONS = 50
     }
 }
