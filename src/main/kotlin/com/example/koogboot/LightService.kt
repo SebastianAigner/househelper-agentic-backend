@@ -1,6 +1,7 @@
 package com.example.koogboot
 
 import org.springframework.stereotype.Service
+import kotlin.math.roundToInt
 
 data class RgbColor(
     val red: Int,
@@ -191,7 +192,7 @@ class HomePowerService(
             )
         }
 
-    fun currentWatts(): Double = getDeviceStatuses().sumOf(HomeDeviceStatus::watts)
+    fun currentWatts(): Int = getDeviceStatuses().sumOf(HomeDeviceStatus::watts).roundToInt()
 
     fun resetHome(): List<HomeDeviceStatus> {
         lightService.reset()

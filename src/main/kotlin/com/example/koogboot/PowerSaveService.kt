@@ -7,7 +7,6 @@ import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.message.MessagePart
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
-import kotlin.math.roundToInt
 
 data class PowerSaveRequest(
     val targetWatts: Int,
@@ -43,43 +42,44 @@ class PowerSaveService(
         var toolIterations = 0
         var retries = 0
         val toolCallTrace = mutableListOf<String>()
-        var result: PowerSaveResult? = null
         var powerDrawReported = false
 
-        while (result == null) {
+        while (true) {
             var toolCalls = response.parts.filterIsInstance<MessagePart.Tool.Call>()
             while (toolCalls.isNotEmpty()) {
                 check(++toolIterations <= MAX_TOOL_ITERATIONS) { "Agent exceeded the tool-call limit" }
-                toolCalls.forEach { toolCallTrace += "[Tool] ${it.tool} ${it.args}" }
+                toolCallTrace += toolCalls.map { "[Tool] ${it.tool} ${it.args}" }
                 response = sendToolResults(executeTools(toolCalls))
                 toolCalls = response.parts.filterIsInstance<MessagePart.Tool.Call>()
                 powerDrawReported = false
             }
 
-            val currentWatts = homePowerService.currentWatts().roundToInt()
-            if (currentWatts <= request.targetWatts && !powerDrawReported) {
-                powerDrawReported = true
-                response = requestLLM(successValidationPrompt(currentWatts, request.targetWatts))
-            } else if (currentWatts <= request.targetWatts || retries == MAX_RETRIES) {
-                val assistantResponse = response.parts.filterIsInstance<MessagePart.Text>()
-                    .joinToString(separator = "\n") { it.text }
-                val responseWithToolCalls = (toolCallTrace + assistantResponse)
-                    .filter { it.isNotBlank() }
-                    .joinToString(separator = "\n")
-                result = PowerSaveResult(
-                    success = currentWatts <= request.targetWatts,
-                    targetWatts = request.targetWatts,
-                    currentWatts = currentWatts,
-                    retries = retries,
-                    response = responseWithToolCalls,
-                )
-            } else {
-                retries++
-                response = requestLLM(failedValidationPrompt(request, currentWatts, retries))
+            val currentWatts = homePowerService.currentWatts()
+            when {
+                currentWatts <= request.targetWatts && !powerDrawReported -> {
+                    powerDrawReported = true
+                    response = requestLLM(successValidationPrompt(currentWatts, request.targetWatts))
+                }
+
+                currentWatts <= request.targetWatts || retries == MAX_RETRIES ->
+                    return@functionalStrategy PowerSaveResult(
+                        success = currentWatts <= request.targetWatts,
+                        targetWatts = request.targetWatts,
+                        currentWatts = currentWatts,
+                        retries = retries,
+                        response = (toolCallTrace + response.textContent())
+                            .filter(String::isNotBlank)
+                            .joinToString(separator = "\n"),
+                    )
+
+                else -> {
+                    retries++
+                    response = requestLLM(failedValidationPrompt(request, currentWatts, retries))
+                }
             }
         }
 
-        result
+        error("Power-save strategy loop terminated unexpectedly")
     }
 
     private val agent = AIAgent(

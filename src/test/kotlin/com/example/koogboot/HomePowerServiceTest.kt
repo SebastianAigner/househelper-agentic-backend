@@ -22,7 +22,7 @@ class HomePowerServiceTest {
 
     @Test
     fun `busy home has expected aggregate draw`() {
-        assertThat(homePowerService.currentWatts()).isEqualTo(9_875.8)
+        assertThat(homePowerService.currentWatts()).isEqualTo(9_876)
     }
 
     @Test
@@ -41,6 +41,6 @@ class HomePowerServiceTest {
         assertThat(applianceService.getAppliances()).anyMatch {
             it.id == "refrigerator" && it.watts == 500.0
         }
-        assertThat(homePowerService.currentWatts()).isEqualTo(9_875.8)
+        assertThat(homePowerService.currentWatts()).isEqualTo(9_876)
     }
 }
