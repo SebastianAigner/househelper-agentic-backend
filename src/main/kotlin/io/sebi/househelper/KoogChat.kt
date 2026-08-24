@@ -37,7 +37,7 @@ class ChatService(
     """.trimIndent()
 
     private val toolRegistry = ToolRegistry {
-        tools(WeatherTools(weatherService).asTools())
+        tools(WeatherTools(weatherService).asTools()) // RM
         tools(LightTools(lightService).asTools())
         tools(ApplianceTools(applianceService).asTools())
     }
