@@ -44,7 +44,7 @@ class PowerSaveService(
 
         var response = requestLLM(initialPrompt(request))
         val toolCallTrace = mutableListOf<String>()
-        // ⌄⌄⌄⌄⌄⌄⌄
+        // ⌄⌄⌄⌄⌄⌄⌄  instead, TODO("Implement power saving strategy").
         var toolIterations = 0
         var retries = 0
         var powerDrawReported = false
@@ -84,7 +84,7 @@ class PowerSaveService(
         }
 
         error("Power-save strategy loop terminated unexpectedly")
-        // ⌃⌃⌃⌃⌃⌃⌃ instead, TODO("Implement power saving strategy").
+        // ⌃⌃⌃⌃⌃⌃⌃
     }
 
     // ⌄⌄⌄⌄⌄⌄⌄
