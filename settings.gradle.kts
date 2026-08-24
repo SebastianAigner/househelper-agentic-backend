@@ -1,1 +1,1 @@
-rootProject.name = "koog-boot-playground"
+rootProject.name = "househelper-backend"

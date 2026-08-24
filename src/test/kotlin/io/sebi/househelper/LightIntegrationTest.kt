@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import org.junit.jupiter.api.Test
 import org.springframework.test.web.servlet.get

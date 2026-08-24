@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.functionalStrategy
@@ -42,6 +42,7 @@ class ChatService(
     private val executor: PromptExecutor,
     lightService: LightService,
     applianceService: ApplianceService,
+    weatherService: WeatherService,
 ) {
 
     private val systemPrompt = """
@@ -53,7 +54,7 @@ class ChatService(
     """.trimIndent()
 
     private val toolRegistry = ToolRegistry {
-        tools(WeatherTools().asTools())
+        tools(WeatherTools(weatherService).asTools())
         tools(LightTools(lightService).asTools())
         tools(ApplianceTools(applianceService).asTools())
     }

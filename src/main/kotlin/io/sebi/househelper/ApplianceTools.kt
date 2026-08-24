@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.core.tools.annotations.Tool

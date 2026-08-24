@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import ai.koog.prompt.executor.clients.anthropic.AnthropicClientSettings
 import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient

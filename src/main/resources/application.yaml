@@ -3,10 +3,12 @@ server:
 
 spring:
   application:
-    name: koog-boot-playground
+    name: househelper-backend
   mvc:
     async:
       request-timeout: 5m
+    servlet:
+      load-on-startup: 1
 
 ai:
   koog:

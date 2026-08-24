@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import org.springframework.stereotype.Service
 import kotlin.math.roundToInt

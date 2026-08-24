@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals

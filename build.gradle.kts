@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.spring.dependency.management)
 }
 
-group = "com.example"
+group = "io.sebi"
 version = "0.1.0"
 
 java {

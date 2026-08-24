@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

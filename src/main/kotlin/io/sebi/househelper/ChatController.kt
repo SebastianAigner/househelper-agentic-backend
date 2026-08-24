@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking

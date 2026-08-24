@@ -1,4 +1,4 @@
-package com.example.koogboot
+package io.sebi.househelper
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.functionalStrategy
