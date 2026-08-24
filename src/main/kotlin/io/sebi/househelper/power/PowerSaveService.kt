@@ -43,11 +43,11 @@ class PowerSaveService(
         require(request.targetWatts >= 0) { "Power-save target cannot be negative" }
 
         var response = requestLLM(initialPrompt(request))
+        val toolCallTrace = mutableListOf<String>()
+        // ⌄⌄⌄⌄⌄⌄⌄
         var toolIterations = 0
         var retries = 0
-        val toolCallTrace = mutableListOf<String>()
         var powerDrawReported = false
-        // ⌄⌄⌄⌄⌄⌄⌄
         while (true) {
             var toolCalls = getToolCalls(response)
             while (toolCalls.isNotEmpty()) {
