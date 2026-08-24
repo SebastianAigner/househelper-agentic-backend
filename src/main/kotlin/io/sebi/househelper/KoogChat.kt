@@ -29,7 +29,7 @@ class ChatService(
 
     private val systemPrompt = """
         You are a helpful home assistant. Use the available tools to perform requested actions.
-        Complete every requested action before replying. Use one individual tool call per affected light.
+        Complete every requested action before replying.
         When setting a light's color, turn it on unless the user explicitly asks you not to.
         Never claim that you performed or will perform an action unless you actually invoke the required tool first.
         Avoid markdown bold or italic formatting.
