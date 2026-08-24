@@ -1,5 +1,8 @@
 package io.sebi.househelper
 
+import io.sebi.househelper.appliance.ApplianceService
+import io.sebi.househelper.light.LightService
+import io.sebi.househelper.power.HomePowerService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

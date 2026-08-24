@@ -1,5 +1,8 @@
 package io.sebi.househelper
 
+import io.sebi.househelper.light.LightController
+import io.sebi.househelper.light.LightService
+import io.sebi.househelper.light.LightTools
 import org.junit.jupiter.api.Test
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.setup.MockMvcBuilders

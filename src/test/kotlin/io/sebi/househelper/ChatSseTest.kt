@@ -1,6 +1,7 @@
 package io.sebi.househelper
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.sebi.househelper.chat.sendSseEvent
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.io.StringWriter

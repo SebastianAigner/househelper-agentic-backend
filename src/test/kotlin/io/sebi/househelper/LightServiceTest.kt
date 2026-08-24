@@ -1,5 +1,7 @@
 package io.sebi.househelper
 
+import io.sebi.househelper.light.LightService
+import io.sebi.househelper.light.RgbColor
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
