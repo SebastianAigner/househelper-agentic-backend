@@ -2,8 +2,7 @@ package io.sebi.househelper.sample
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.functionalStrategy
-import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
-import ai.koog.prompt.executor.llms.MultiLLMPromptExecutor
+import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import io.sebi.househelper.config.GPT56Luna
 import kotlinx.coroutines.runBlocking
 
@@ -30,9 +29,7 @@ val myStrategy =
 
 fun main() = runBlocking {
     val agent = AIAgent(
-        // koog-spring-ai-starter-model-chat doesn't bring prompt-executor-llms-all's
-        // simpleOpenAIExecutor(); build the same MultiLLMPromptExecutor(OpenAILLMClient) it would.
-        promptExecutor = MultiLLMPromptExecutor(OpenAILLMClient(System.getenv("OPENAI_API_KEY"))),
+        promptExecutor = simpleOpenAIExecutor(System.getenv("OPENAI_API_KEY")),
         llmModel = GPT56Luna,
     )
 

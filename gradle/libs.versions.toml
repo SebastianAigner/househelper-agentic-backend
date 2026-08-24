@@ -2,18 +2,11 @@
 kotlin = "2.4.10"
 spring-boot = "3.5.16"
 spring-dependency-management = "1.1.7"
-# koog-agents-jvm is released without the "-beta" suffix that the (still-beta)
-# Spring AI starter modules carry, even within the same overall Koog release.
-koog = "1.1.1"
-koog-spring-ai = "1.1.1-beta"
-spring-ai = "1.1.6"
+koog = "1.1.1-beta"
 kotlinx-serialization = "1.11.0"
 
 [libraries]
-koog-agents = { module = "ai.koog:koog-agents-jvm", version.ref = "koog" }
-koog-spring-ai-starter-model-chat = { module = "ai.koog:koog-spring-ai-starter-model-chat", version.ref = "koog-spring-ai" }
-spring-ai-bom = { module = "org.springframework.ai:spring-ai-bom", version.ref = "spring-ai" }
-spring-ai-starter-model-openai = { module = "org.springframework.ai:spring-ai-starter-model-openai" }
+koog-spring-boot-starter = { module = "ai.koog:koog-spring-boot-starter", version.ref = "koog" }
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }

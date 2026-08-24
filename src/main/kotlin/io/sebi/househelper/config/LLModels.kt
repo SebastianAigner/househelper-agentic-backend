@@ -5,6 +5,8 @@ import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
 
 // GPT-5.6 Luna isn't in ai.koog's OpenAIModels catalog yet, so it's defined here directly.
+// Unlike AnthropicLLMClient, OpenAILLMClient sends model.id straight through without
+// validating it against a built-in catalog, so no client override bean is needed here.
 val GPT56Luna: LLModel = LLModel(
     provider = LLMProvider.OpenAI,
     id = "gpt-5.6-luna",
