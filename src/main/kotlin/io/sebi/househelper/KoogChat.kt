@@ -20,7 +20,7 @@ private data class StreamChatInput(
 
 @Service
 class ChatService(
-    @Qualifier("anthropicExecutor")
+    @Qualifier("openAIExecutor")
     private val executor: PromptExecutor,
     lightService: LightService,
     applianceService: ApplianceService,
@@ -85,7 +85,7 @@ class ChatService(
 
     private val agent = AIAgent(
         promptExecutor = executor,
-        llmModel = ClaudeSonnet5,
+        llmModel = GPT56Luna,
         toolRegistry = toolRegistry,
         strategy = strategy,
         systemPrompt = systemPrompt,
@@ -93,7 +93,7 @@ class ChatService(
 
     private val streamingAgent = AIAgent(
         promptExecutor = executor,
-        llmModel = ClaudeSonnet5,
+        llmModel = GPT56Luna,
         toolRegistry = toolRegistry,
         strategy = streamingStrategy,
         systemPrompt = systemPrompt,

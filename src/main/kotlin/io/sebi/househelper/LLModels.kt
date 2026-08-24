@@ -38,7 +38,6 @@ val GPT56Luna: LLModel = LLModel(
         LLMCapability.Vision.Image,
         LLMCapability.Document,
         LLMCapability.MultipleChoices,
-        LLMCapability.OpenAIEndpoint.Completions,
         LLMCapability.OpenAIEndpoint.Responses,
         LLMCapability.Schema.JSON.Basic,
         LLMCapability.Schema.JSON.Standard,
