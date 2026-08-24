@@ -21,8 +21,8 @@ data class PowerSaveResult(
     val success: Boolean,
     val targetWatts: Int,
     val currentWatts: Int,
-    val retries: Int,
-    val response: String,
+    val retries: Int = 0,
+    val response: String = "(no response)",
 )
 
 @Service
