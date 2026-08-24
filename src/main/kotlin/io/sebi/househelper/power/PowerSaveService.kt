@@ -47,7 +47,7 @@ class PowerSaveService(
         var retries = 0
         val toolCallTrace = mutableListOf<String>()
         var powerDrawReported = false
-
+        // ⌄⌄⌄⌄⌄⌄⌄
         while (true) {
             var toolCalls = getToolCalls(response)
             while (toolCalls.isNotEmpty()) {
@@ -84,6 +84,7 @@ class PowerSaveService(
         }
 
         error("Power-save strategy loop terminated unexpectedly")
+        // ⌃⌃⌃⌃⌃⌃⌃ instead, TODO("Implement power saving strategy").
     }
 
     // ⌄⌄⌄⌄⌄⌄⌄
