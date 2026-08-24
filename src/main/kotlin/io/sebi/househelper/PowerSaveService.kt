@@ -81,6 +81,39 @@ class PowerSaveService(
         error("Power-save strategy loop terminated unexpectedly")
     }
 
+    // ⌄⌄⌄⌄⌄⌄⌄
+    private val minimalStrategy = functionalStrategy<PowerSaveRequest, PowerSaveResult> { request ->
+        require(request.targetWatts >= 0) { "Power-save target cannot be negative" }
+
+        var response = requestLLM(initialPrompt(request))
+        while (true) {
+            var toolCalls = getToolCalls(response)
+            while (toolCalls.isNotEmpty()) {
+                response = sendToolResults(executeTools(toolCalls))
+                toolCalls = getToolCalls(response)
+            }
+
+            val currentWatts = homePowerService.currentWatts()
+            if (currentWatts <= request.targetWatts) {
+                return@functionalStrategy PowerSaveResult(
+                    true,
+                    request.targetWatts,
+                    currentWatts,
+                    0,
+                    response.textContent()
+                )
+            }
+
+            response = requestLLM(
+                "The home currently draws $currentWatts W, which is above the ${request.targetWatts} W target. " +
+                        "Take additional energy-saving actions now."
+            )
+        }
+
+        error("Power-save strategy loop terminated unexpectedly")
+    }
+    // ⌃⌃⌃⌃⌃⌃⌃
+
     private val agent = AIAgent(
         promptExecutor = executor,
         llmModel = ClaudeSonnet5,
