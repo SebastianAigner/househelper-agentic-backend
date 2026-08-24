@@ -3,3 +3,4 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 antkey.txt
+oaikey.txt

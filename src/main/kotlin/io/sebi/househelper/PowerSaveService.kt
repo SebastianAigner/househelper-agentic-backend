@@ -4,7 +4,6 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.functionalStrategy
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.prompt.executor.model.PromptExecutor
-import ai.koog.prompt.message.MessagePart
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
@@ -45,12 +44,12 @@ class PowerSaveService(
         var powerDrawReported = false
 
         while (true) {
-            var toolCalls = response.parts.filterIsInstance<MessagePart.Tool.Call>()
+            var toolCalls = getToolCalls(response)
             while (toolCalls.isNotEmpty()) {
                 check(++toolIterations <= MAX_TOOL_ITERATIONS) { "Agent exceeded the tool-call limit" }
                 toolCallTrace += toolCalls.map { "[Tool] ${it.tool} ${it.args}" }
                 response = sendToolResults(executeTools(toolCalls))
-                toolCalls = response.parts.filterIsInstance<MessagePart.Tool.Call>()
+                toolCalls = getToolCalls(response)
                 powerDrawReported = false
             }
 
