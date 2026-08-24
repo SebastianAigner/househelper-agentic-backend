@@ -27,7 +27,7 @@ data class PowerSaveResult(
 
 @Service
 class PowerSaveService(
-    @Qualifier("openAIExecutor")
+    @Qualifier("koogPromptExecutor")
     private val executor: PromptExecutor,
     lightService: LightService,
     applianceService: ApplianceService,

@@ -27,7 +27,7 @@ private data class StreamChatInput(
 
 @Service
 class ChatService(
-    @Qualifier("openAIExecutor")
+    @Qualifier("koogPromptExecutor")
     private val executor: PromptExecutor,
     lightService: LightService,
     applianceService: ApplianceService,

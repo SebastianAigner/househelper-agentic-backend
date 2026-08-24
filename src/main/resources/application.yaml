@@ -9,12 +9,6 @@ spring:
       request-timeout: 5m
     servlet:
       load-on-startup: 1
-
-ai:
-  koog:
-    anthropic:
-      enabled: true
-      api-key: ${ANTHROPIC_API_KEY}
+  ai:
     openai:
-      enabled: true
       api-key: ${OPENAI_API_KEY}
