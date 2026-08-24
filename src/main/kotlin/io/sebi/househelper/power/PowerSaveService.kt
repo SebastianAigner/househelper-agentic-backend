@@ -1,9 +1,14 @@
-package io.sebi.househelper
+package io.sebi.househelper.power
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.agent.functionalStrategy
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.prompt.executor.model.PromptExecutor
+import io.sebi.househelper.appliance.ApplianceService
+import io.sebi.househelper.appliance.ApplianceTools
+import io.sebi.househelper.config.GPT56Luna
+import io.sebi.househelper.light.LightService
+import io.sebi.househelper.light.LightTools
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 

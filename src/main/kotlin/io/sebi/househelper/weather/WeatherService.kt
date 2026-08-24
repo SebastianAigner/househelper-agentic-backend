@@ -1,4 +1,4 @@
-package io.sebi.househelper
+package io.sebi.househelper.weather
 
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable

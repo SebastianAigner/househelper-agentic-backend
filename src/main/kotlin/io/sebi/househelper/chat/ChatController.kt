@@ -1,4 +1,4 @@
-package io.sebi.househelper
+package io.sebi.househelper.chat
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.runBlocking

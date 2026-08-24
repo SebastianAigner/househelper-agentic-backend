@@ -1,4 +1,4 @@
-package io.sebi.househelper
+package io.sebi.househelper.light
 
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import ai.koog.agents.core.tools.annotations.Tool

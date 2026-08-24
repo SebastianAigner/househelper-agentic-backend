@@ -1,4 +1,4 @@
-package io.sebi.househelper
+package io.sebi.househelper.config
 
 import ai.koog.prompt.executor.clients.anthropic.AnthropicClientSettings
 import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient

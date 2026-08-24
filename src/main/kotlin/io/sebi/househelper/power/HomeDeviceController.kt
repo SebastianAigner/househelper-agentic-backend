@@ -1,4 +1,4 @@
-package io.sebi.househelper
+package io.sebi.househelper.power
 
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping

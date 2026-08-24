@@ -1,4 +1,4 @@
-package io.sebi.househelper
+package io.sebi.househelper.config
 
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
