@@ -62,10 +62,6 @@ tasks.withType<Test> {
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    val keyFile = rootProject.file("antkey.txt")
-    if (keyFile.exists()) {
-        environment("ANTHROPIC_API_KEY", keyFile.readText().trim())
-    }
     val openaiKeyFile = rootProject.file("oaikey.txt")
     if (openaiKeyFile.exists()) {
         environment("OPENAI_API_KEY", openaiKeyFile.readText().trim())
