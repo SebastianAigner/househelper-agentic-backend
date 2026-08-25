@@ -10,6 +10,9 @@ import ai.koog.agents.core.dsl.extension.nodeLLMSendToolResults
 import ai.koog.agents.core.dsl.extension.onTextMessage
 import ai.koog.agents.core.dsl.extension.onToolCalls
 import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.ext.agent.ConditionResult
+import ai.koog.agents.ext.agent.RetrySubgraphResult
+import ai.koog.agents.ext.agent.subgraphWithRetry
 import ai.koog.prompt.executor.model.PromptExecutor
 import io.sebi.househelper.appliance.ApplianceService
 import io.sebi.househelper.appliance.ApplianceTools
@@ -20,22 +23,16 @@ import io.sebi.househelper.light.LightTools
 // Storage keys are stateless identifiers, so they're safe to share across agent runs; the
 // values behind them live in each run's own AIAgentStorage, not in these top-level vals.
 private val requestKey = createStorageKey<PowerSaveRequest>("power-save/request")
-private val retriesKey = createStorageKey<Int>("power-save/retries")
-private val awaitingFinalMessageKey = createStorageKey<Boolean>("power-save/awaiting-final-message")
-
-private sealed interface PowerCheckOutcome {
-    data class Continue(val prompt: String) : PowerCheckOutcome
-    data class Finished(val result: PowerSaveResult) : PowerCheckOutcome
-}
+private val attemptKey = createStorageKey<Int>("power-save/attempt")
 
 /**
  * Graph-based counterpart to [PowerSaveService]'s functional strategy.
  *
- * The mapping from the imperative version is direct: its inner `while (toolCalls.isNotEmpty())`
- * loop becomes the executeTool/sendToolResult cycle below, and its outer retry `while (true)` loop
- * becomes the checkPower/callLLM cycle. Per-run state (the request, retry count, whether we're
- * waiting on a final confirmation message) lives in [ai.koog.agents.core.agent.entity.AIAgentStorage]
- * instead of local `var`s, since the graph itself is built once and reused across runs.
+ * Where the original hand-rolls both loops with `while` and local `var`s, this version leans on
+ * Koog's built-in [subgraphWithRetry]: its inner `defineAction` block is the LLM-request/tool-call
+ * cycle (the original's `while (toolCalls.isNotEmpty())` loop), and `subgraphWithRetry` itself
+ * supplies the outer retry cycle, including re-running the action with LLM feedback on rejection
+ * and giving up after [MAX_RETRIES] retries.
  */
 class PowerSaveGraphService(
     private val executor: PromptExecutor,
@@ -53,76 +50,49 @@ class PowerSaveGraphService(
         val preparePrompt by node<PowerSaveRequest, String> { request ->
             require(request.targetWatts >= 0) { "Power-save target cannot be negative" }
             storage.set(requestKey, request)
-            storage.set(retriesKey, 0)
-            storage.set(awaitingFinalMessageKey, false)
             initialPrompt(request)
         }
 
-        val callLLM by nodeLLMRequest()
-        val executeTool by nodeExecuteTools()
-        val sendToolResult by nodeLLMSendToolResults()
-
-        val checkPower by node<String, PowerCheckOutcome> { responseText ->
-            val request = storage.getValue(requestKey)
-            val currentWatts = homePowerService.currentWatts()
-
-            when {
-                currentWatts <= request.targetWatts && storage.getValue(awaitingFinalMessageKey) ->
-                    PowerCheckOutcome.Finished(
-                        PowerSaveResult(
-                            success = true,
-                            targetWatts = request.targetWatts,
-                            currentWatts = currentWatts,
-                            retries = storage.getValue(retriesKey),
-                            response = responseText,
-                        )
-                    )
-
-                currentWatts <= request.targetWatts -> {
-                    storage.set(awaitingFinalMessageKey, true)
-                    PowerCheckOutcome.Continue(successValidationPrompt(currentWatts, request.targetWatts))
+        // subgraphWithRetry counts every attempt (including the first), so MAX_RETRIES + 1 allows
+        // up to MAX_RETRIES retries after an initial attempt, matching the original's semantics.
+        val saveUntilTarget by subgraphWithRetry<String, String>(
+            maxRetries = MAX_RETRIES + 1,
+            condition = {
+                val request = storage.getValue(requestKey)
+                val currentWatts = homePowerService.currentWatts()
+                if (currentWatts <= request.targetWatts) {
+                    ConditionResult.Approve
+                } else {
+                    val attempt = (storage.get(attemptKey) ?: 0) + 1
+                    storage.set(attemptKey, attempt)
+                    ConditionResult.Reject(failedValidationPrompt(request, currentWatts, attempt))
                 }
+            },
+        ) {
+            val callLLM by nodeLLMRequest()
+            val executeTool by nodeExecuteTools()
+            val sendToolResult by nodeLLMSendToolResults()
 
-                storage.getValue(retriesKey) >= MAX_RETRIES ->
-                    PowerCheckOutcome.Finished(
-                        PowerSaveResult(
-                            success = false,
-                            targetWatts = request.targetWatts,
-                            currentWatts = currentWatts,
-                            retries = storage.getValue(retriesKey),
-                            response = responseText,
-                        )
-                    )
+            nodeStart then callLLM
 
-                else -> {
-                    val retries = storage.getValue(retriesKey) + 1
-                    storage.set(retriesKey, retries)
-                    storage.set(awaitingFinalMessageKey, false)
-                    PowerCheckOutcome.Continue(failedValidationPrompt(request, currentWatts, retries))
-                }
-            }
+            edge(callLLM forwardTo executeTool onToolCalls { true })
+            edge(callLLM forwardTo nodeFinish onTextMessage { true })
+            edge(executeTool forwardTo sendToolResult)
+            edge(sendToolResult forwardTo executeTool onToolCalls { true })
+            edge(sendToolResult forwardTo nodeFinish onTextMessage { true })
         }
 
-        edge(nodeStart forwardTo preparePrompt)
-        edge(preparePrompt forwardTo callLLM)
+        val toResult by node<RetrySubgraphResult<String>, PowerSaveResult> { result ->
+            PowerSaveResult(
+                success = result.success,
+                targetWatts = storage.getValue(requestKey).targetWatts,
+                currentWatts = homePowerService.currentWatts(),
+                retries = result.retryCount - 1,
+                response = result.output,
+            )
+        }
 
-        edge(callLLM forwardTo executeTool onToolCalls { true })
-        edge(callLLM forwardTo checkPower onTextMessage { true })
-
-        edge(executeTool forwardTo sendToolResult)
-        edge(sendToolResult forwardTo executeTool onToolCalls { true })
-        edge(sendToolResult forwardTo checkPower onTextMessage { true })
-
-        edge(
-            checkPower forwardTo callLLM
-                onCondition { it is PowerCheckOutcome.Continue }
-                transformed { (it as PowerCheckOutcome.Continue).prompt }
-        )
-        edge(
-            checkPower forwardTo nodeFinish
-                onCondition { it is PowerCheckOutcome.Finished }
-                transformed { (it as PowerCheckOutcome.Finished).result }
-        )
+        nodeStart then preparePrompt then saveUntilTarget then toResult then nodeFinish
     }
 
     private val agent = AIAgent(
@@ -152,11 +122,6 @@ class PowerSaveGraphService(
         Maximize the comfort and convenience of any occupants, if there are any.
         Reaching the target is mandatory, but once it is reached, occupant comfort and convenience take precedence over saving additional energy.
         Account for the user's likely needs based on whether they are home or away.
-    """.trimIndent()
-
-    private fun successValidationPrompt(currentWatts: Int, targetWatts: Int): String = """
-        Deterministic validation: the home now draws $currentWatts W, which is within the $targetWatts W target.
-        The final power draw must remain at or below the target.
     """.trimIndent()
 
     private fun failedValidationPrompt(request: PowerSaveRequest, currentWatts: Int, retries: Int): String = """
