@@ -18,9 +18,12 @@ class WeatherService {
 
     suspend fun getWeather(location: String): WeatherConditions {
         delay(200.milliseconds) // simulate service delay
+        val temperature = 5 + Random(location.hashCode() * 31).nextInt(30)
+        if (location.equals("london", ignoreCase = true)) {
+            return WeatherConditions(location, "raining cats and dogs", temperature)
+        }
         val conditions = listOf("sunny", "cloudy", "rainy", "windy", "snowy")
         val condition = conditions[Random(location.hashCode()).nextInt(conditions.size)]
-        val temperature = 5 + Random(location.hashCode() * 31).nextInt(30)
         return WeatherConditions(location, condition, temperature)
     }
 }
