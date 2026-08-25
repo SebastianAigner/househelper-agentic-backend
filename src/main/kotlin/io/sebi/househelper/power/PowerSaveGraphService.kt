@@ -20,20 +20,9 @@ import io.sebi.househelper.config.lunaAgentConfig
 import io.sebi.househelper.light.LightService
 import io.sebi.househelper.light.LightTools
 
-// Storage keys are stateless identifiers, so they're safe to share across agent runs; the
-// values behind them live in each run's own AIAgentStorage, not in these top-level vals.
 private val requestKey = createStorageKey<PowerSaveRequest>("power-save/request")
 private val attemptKey = createStorageKey<Int>("power-save/attempt")
 
-/**
- * Graph-based counterpart to [PowerSaveService]'s functional strategy.
- *
- * Where the original hand-rolls both loops with `while` and local `var`s, this version leans on
- * Koog's built-in [subgraphWithRetry]: its inner `defineAction` block is the LLM-request/tool-call
- * cycle (the original's `while (toolCalls.isNotEmpty())` loop), and `subgraphWithRetry` itself
- * supplies the outer retry cycle, including re-running the action with LLM feedback on rejection
- * and giving up after [MAX_RETRIES] retries.
- */
 class PowerSaveGraphService(
     private val executor: PromptExecutor,
     lightService: LightService,
