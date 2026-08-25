@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>HouseHelper Chat</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 1100px;
+      margin: 3rem auto;
+      padding: 0 1rem;
+      color: #1a1a1a;
+    }
+    h1 { font-size: 1.4rem; }
+    #response {
+      white-space: pre-wrap;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      min-height: 3rem;
+      margin-top: 1rem;
+      background: #fafafa;
+    }
+    form { display: flex; gap: 0.5rem; margin-top: 1rem; align-items: center; }
+    input, select {
+      flex: 1;
+      padding: 0.6rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #1a1a1a;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: default; }
+    #power-form {
+      flex-wrap: wrap;
+      padding: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    #power-target { max-width: 7rem; }
+    #occupancy { flex: 0 0 auto; }
+    #total-power { font-size: 1.1rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+    .error { color: #b00020; }
+    .tool-output { color: #777; }
+    #devices { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; margin: 1rem 0 2rem; }
+    .device {
+      display: grid;
+      justify-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      padding: 0.8rem 0.4rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .device.flash-on { animation: flash-on 0.9s ease-out; }
+    .device.flash-off { animation: flash-off 0.9s ease-out; }
+    @keyframes flash-on {
+      0%, 100% { border-color: #ddd; box-shadow: none; }
+      20%, 65% { border-color: #e6b800; box-shadow: 0 0 0 3px rgb(255 215 0 / 45%); }
+    }
+    @keyframes flash-off {
+      0%, 100% { border-color: #ddd; box-shadow: none; }
+      20%, 65% { border-color: #d32f2f; box-shadow: 0 0 0 3px rgb(211 47 47 / 40%); }
+    }
+    .light-bulb {
+      width: 2.5rem;
+      height: 2.5rem;
+      box-sizing: border-box;
+      border: 1px solid #bbb;
+      border-radius: 50%;
+      background: var(--light-color);
+      opacity: var(--light-opacity);
+      box-shadow: 0 0 var(--light-glow) var(--light-color);
+      transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
+    }
+    .appliance-icon { font-size: 2rem; line-height: 2.5rem; filter: grayscale(var(--device-off)); opacity: var(--device-opacity); }
+    .watts { color: #555; font-variant-numeric: tabular-nums; }
+    h2 { margin-top: 2rem; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <h1>HouseHelper Chat</h1>
+  <form id="power-form">
+    <span>Power save target:</span>
+    <input id="power-target" type="number" min="0" step="1" value="2000" required>
+    <span>watts | user is</span>
+    <select id="occupancy">
+      <option value="home">at home</option>
+      <option value="away">away</option>
+    </select>
+    <button id="power-save" type="submit">Save power</button>
+    <button id="reset-home" type="button">Reset home</button>
+  </form>
+  <div id="total-power" aria-live="polite"></div>
+  <div id="devices" aria-label="Home devices"></div>
+  <h2>Assistant output</h2>
+  <div id="response"></div>
+  <h2>Free-text chat</h2>
+  <form id="chat-form">
+    <input id="message" type="text" placeholder="Type a message..." autocomplete="off" required>
+    <button id="send" type="submit">Send</button>
+    <button id="send-sse" type="button">Send with SSE</button>
+  </form>
+  <script>
+    const powerForm = document.getElementById('power-form');
+    const powerTarget = document.getElementById('power-target');
+    const occupancy = document.getElementById('occupancy');
+    const powerButton = document.getElementById('power-save');
+    const resetButton = document.getElementById('reset-home');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('message');
+    const button = document.getElementById('send');
+    const sseButton = document.getElementById('send-sse');
+    const responseEl = document.getElementById('response');
+    const devicesEl = document.getElementById('devices');
+    const totalPowerEl = document.getElementById('total-power');
+    const appliancePowerStates = new Map();
+
+    async function updateDevices() {
+      try {
+        const res = await fetch('/api/devices');
+        if (!res.ok) return;
+
+        const devices = await res.json();
+        totalPowerEl.textContent = `Current power draw: ${formatWatts(devices.reduce((sum, device) => sum + device.watts, 0))}`;
+        devicesEl.replaceChildren(...devices.map(device => {
+          const item = document.createElement('div');
+          item.className = 'device';
+          if (device.kind !== 'light') {
+            const previousPowerState = appliancePowerStates.get(device.id);
+            if (previousPowerState !== undefined && previousPowerState !== device.on) {
+              item.classList.add(device.on ? 'flash-on' : 'flash-off');
+            }
+            appliancePowerStates.set(device.id, device.on);
+          }
+
+          let icon;
+          if (device.kind === 'light') {
+            icon = document.createElement('div');
+            icon.className = 'light-bulb';
+            const { red, green, blue } = device.color;
+            icon.style.setProperty('--light-color', `rgb(${red}, ${green}, ${blue})`);
+            icon.style.setProperty('--light-opacity', device.on ? 0.25 + device.brightness * 0.0075 : 0.12);
+            icon.style.setProperty('--light-glow', device.on ? `${device.brightness / 8}px` : '0');
+          } else {
+            icon = document.createElement('div');
+            icon.className = 'appliance-icon';
+            icon.textContent = { 'car-charger': '🚗', 'towel-warmer': '♨', 'heat-blower': '🌡', 'refrigerator': '❄' }[device.id] || '⚡';
+            icon.style.setProperty('--device-off', device.on ? '0' : '1');
+            icon.style.setProperty('--device-opacity', device.on ? '1' : '0.25');
+          }
+          icon.title = device.on ? 'On' : 'Off';
+          icon.setAttribute('role', 'img');
+          icon.setAttribute('aria-label', `${device.name}: ${icon.title}`);
+
+          const label = document.createElement('span');
+          label.textContent = device.name;
+          const watts = document.createElement('span');
+          watts.className = 'watts';
+          watts.textContent = formatWatts(device.watts);
+          item.append(icon, label, watts);
+          return item;
+        }));
+      } catch (_) {
+        // Keep the last known state if polling temporarily fails.
+      }
+    }
+
+    function formatWatts(watts) {
+      return `${watts.toLocaleString(undefined, { maximumFractionDigits: 1 })} W`;
+    }
+
+    updateDevices();
+    setInterval(updateDevices, 1000);
+
+    function setSending(sending) {
+      button.disabled = sending;
+      sseButton.disabled = sending;
+      powerButton.disabled = sending;
+      resetButton.disabled = sending;
+    }
+
+    powerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setSending(true);
+      responseEl.classList.remove('error');
+      responseEl.textContent = 'Saving power and validating the result...';
+
+      try {
+        const res = await fetch('/api/power-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetWatts: Number(powerTarget.value),
+            userAtHome: occupancy.value === 'home'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Power-save request failed');
+        const status = data.success ? 'Target reached' : 'Target not reached';
+        responseEl.textContent = `${status}: ${data.currentWatts} W / ${data.targetWatts} W after ${data.retries} retries.\n\n${data.response}`;
+        await updateDevices();
+      } catch (err) {
+        responseEl.classList.add('error');
+        responseEl.textContent = 'Error: ' + err.message;
+      } finally {
+        setSending(false);
+      }
+    });
+
+    resetButton.addEventListener('click', async () => {
+      setSending(true);
+      responseEl.classList.remove('error');
+      try {
+        const res = await fetch('/api/devices/reset', { method: 'POST' });
+        if (!res.ok) throw new Error('Reset failed');
+        responseEl.textContent = 'Home reset to the busy-home starting state.';
+        await updateDevices();
+      } catch (err) {
+        responseEl.classList.add('error');
+        responseEl.textContent = 'Error: ' + err.message;
+      } finally {
+        setSending(false);
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+
+      setSending(true);
+      responseEl.classList.remove('error');
+      responseEl.textContent = 'Thinking...';
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.response || 'Request failed');
+        responseEl.textContent = data.response;
+      } catch (err) {
+        responseEl.classList.add('error');
+        responseEl.textContent = 'Error: ' + err.message;
+      } finally {
+        setSending(false);
+      }
+    });
+
+    sseButton.addEventListener('click', async () => {
+      const message = input.value.trim();
+      if (!message) return;
+
+      setSending(true);
+      responseEl.classList.remove('error');
+      responseEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/chat/sse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+          body: JSON.stringify({ message })
+        });
+        if (!res.ok || !res.body) throw new Error('Request failed');
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+
+          let boundary;
+          while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+            const block = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            const event = block.match(/^event: (.+)$/m)?.[1];
+            const dataLine = block.match(/^data: (.*)$/m)?.[1];
+            const data = dataLine === undefined ? '' : JSON.parse(dataLine);
+
+            if (event === 'text') {
+              responseEl.append(document.createTextNode(data));
+            } else if (event === 'tool') {
+              const separator = responseEl.textContent && !responseEl.textContent.endsWith('\n') ? '\n' : '';
+              const toolOutput = document.createElement('span');
+              toolOutput.className = 'tool-output';
+              toolOutput.textContent = `${separator}[Tool] ${data}\n`;
+              responseEl.append(toolOutput);
+            } else if (event === 'error') {
+              throw new Error(data);
+            }
+          }
+
+          if (done) break;
+        }
+      } catch (err) {
+        responseEl.classList.add('error');
+        responseEl.append(document.createTextNode('Error: ' + err.message));
+      } finally {
+        setSending(false);
+      }
+    });
+  </script>
+</body>
+</html>

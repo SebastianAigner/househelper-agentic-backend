@@ -5,6 +5,7 @@ import ai.koog.agents.core.agent.functionalStrategy
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import io.sebi.househelper.config.GPT56Luna
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 
 data class MyInput(val temperature: Int)
 data class MyOutput(val answer: String, val userId: Int)
@@ -34,4 +35,18 @@ fun main() = runBlocking {
     )
 
     val answer = agent.run("What's the smallest planet in the solar system?")
+}
+
+
+@Serializable
+data class MovieReview(
+    val title: String,
+    val rating: Int,
+    val summary: String,
+)
+
+val strategy = functionalStrategy<String, MovieReview> { movieName ->
+    val response =
+        requestLLMStructured<MovieReview>("Give me a movie review for $movieName")
+    response.getOrThrow().data
 }
