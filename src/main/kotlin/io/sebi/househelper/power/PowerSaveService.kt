@@ -6,7 +6,7 @@ import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.prompt.executor.model.PromptExecutor
 import io.sebi.househelper.appliance.ApplianceService
 import io.sebi.househelper.appliance.ApplianceTools
-import io.sebi.househelper.config.GPT56Luna
+import io.sebi.househelper.config.lunaAgentConfig
 import io.sebi.househelper.light.LightService
 import io.sebi.househelper.light.LightTools
 import org.springframework.beans.factory.annotation.Qualifier
@@ -121,17 +121,18 @@ class PowerSaveService(
 
     private val agent = AIAgent(
         promptExecutor = executor,
-        llmModel = GPT56Luna,
+        agentConfig = lunaAgentConfig(
+            """
+                You manage a home's devices to satisfy a power target.
+                Always inspect all available devices before acting, then use the tools to make sensible trade-offs.
+                Individual device wattages are unavailable to you. Never ask for or invent individual wattages.
+                The functional strategy will calculate aggregate consumption after each action round and ask you to retry if needed.
+                Write your final response in English, followed by a Japanese translation.
+                Avoid markdown bold or italic formatting in your responses.
+            """.trimIndent(),
+        ),
         toolRegistry = toolRegistry,
         strategy = strategy,
-        systemPrompt = """
-            You manage a home's devices to satisfy a power target.
-            Always inspect all available devices before acting, then use the tools to make sensible trade-offs.
-            Individual device wattages are unavailable to you. Never ask for or invent individual wattages.
-            The functional strategy will calculate aggregate consumption after each action round and ask you to retry if needed.
-            Write your final response in English, followed by a Japanese translation.
-            Avoid markdown bold or italic formatting in your responses.
-        """.trimIndent(),
     )
 
     suspend fun savePower(request: PowerSaveRequest): PowerSaveResult = agent.run(request)

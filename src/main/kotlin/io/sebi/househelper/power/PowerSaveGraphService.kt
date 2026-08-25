@@ -16,7 +16,7 @@ import ai.koog.agents.ext.agent.subgraphWithRetry
 import ai.koog.prompt.executor.model.PromptExecutor
 import io.sebi.househelper.appliance.ApplianceService
 import io.sebi.househelper.appliance.ApplianceTools
-import io.sebi.househelper.config.GPT56Luna
+import io.sebi.househelper.config.lunaAgentConfig
 import io.sebi.househelper.light.LightService
 import io.sebi.househelper.light.LightTools
 
@@ -95,18 +95,19 @@ class PowerSaveGraphService(
 
     private val agent = AIAgent(
         promptExecutor = executor,
-        llmModel = GPT56Luna,
+        agentConfig = lunaAgentConfig(
+            systemPrompt = """
+                You manage a home's devices to satisfy a power target.
+                Always inspect all available devices before acting, then use the tools to make sensible trade-offs.
+                Individual device wattages are unavailable to you. Never ask for or invent individual wattages.
+                The agent's strategy graph will calculate aggregate consumption after each action round and ask you to retry if needed.
+                Write your final response in English, followed by a Japanese translation.
+                Avoid markdown bold or italic formatting in your responses.
+            """.trimIndent(),
+            maxAgentIterations = 200,
+        ),
         toolRegistry = toolRegistry,
         strategy = strategy,
-        maxIterations = 200,
-        systemPrompt = """
-            You manage a home's devices to satisfy a power target.
-            Always inspect all available devices before acting, then use the tools to make sensible trade-offs.
-            Individual device wattages are unavailable to you. Never ask for or invent individual wattages.
-            The agent's strategy graph will calculate aggregate consumption after each action round and ask you to retry if needed.
-            Write your final response in English, followed by a Japanese translation.
-            Avoid markdown bold or italic formatting in your responses.
-        """.trimIndent(),
     )
 
     suspend fun savePower(request: PowerSaveRequest): PowerSaveResult = agent.run(request)

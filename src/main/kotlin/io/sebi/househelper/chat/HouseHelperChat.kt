@@ -7,7 +7,7 @@ import ai.koog.prompt.message.MessagePart
 import ai.koog.prompt.executor.model.PromptExecutor
 import io.sebi.househelper.appliance.ApplianceService
 import io.sebi.househelper.appliance.ApplianceTools
-import io.sebi.househelper.config.GPT56Luna
+import io.sebi.househelper.config.lunaAgentConfig
 import io.sebi.househelper.light.LightService
 import io.sebi.househelper.light.LightTools
 import io.sebi.househelper.weather.WeatherService
@@ -90,20 +90,20 @@ class ChatService(
             .joinToString(separator = "\n") { it.text }
     }
 
+    private val agentConfig = lunaAgentConfig(systemPrompt)
+
     private val agent = AIAgent(
         promptExecutor = executor,
-        llmModel = GPT56Luna,
+        agentConfig = agentConfig,
         toolRegistry = toolRegistry,
         strategy = strategy,
-        systemPrompt = systemPrompt,
     )
 
     private val streamingAgent = AIAgent(
         promptExecutor = executor,
-        llmModel = GPT56Luna,
+        agentConfig = agentConfig,
         toolRegistry = toolRegistry,
         strategy = streamingStrategy,
-        systemPrompt = systemPrompt,
     )
 
     suspend fun chat(message: String): String = agent.run(message)

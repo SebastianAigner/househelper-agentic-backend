@@ -1,5 +1,9 @@
 package io.sebi.househelper.config
 
+import ai.koog.agents.core.agent.config.AIAgentConfig
+import ai.koog.prompt.dsl.prompt
+import ai.koog.prompt.executor.clients.openai.OpenAIResponsesParams
+import ai.koog.prompt.executor.clients.openai.base.models.ServiceTier
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
@@ -25,4 +29,12 @@ val GPT56Luna: LLModel = LLModel(
     ),
     contextLength = 1_050_000,
     maxOutputTokens = 128_000,
+)
+
+fun lunaAgentConfig(systemPrompt: String, maxAgentIterations: Int = 50): AIAgentConfig = AIAgentConfig(
+    prompt = prompt(id = "chat", params = OpenAIResponsesParams(serviceTier = ServiceTier.PRIORITY)) {
+        system(systemPrompt)
+    },
+    model = GPT56Luna,
+    maxAgentIterations = maxAgentIterations,
 )
