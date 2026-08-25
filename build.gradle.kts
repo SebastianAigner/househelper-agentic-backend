@@ -51,6 +51,11 @@ springBoot {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+
+    val openaiKeyFile = rootProject.file("oaikey.txt")
+    if (openaiKeyFile.exists()) {
+        environment("OPENAI_API_KEY", openaiKeyFile.readText().trim())
+    }
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
