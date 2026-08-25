@@ -53,10 +53,8 @@ class PowerSaveGraphService(
             initialPrompt(request)
         }
 
-        // subgraphWithRetry counts every attempt (including the first), so MAX_RETRIES + 1 allows
-        // up to MAX_RETRIES retries after an initial attempt, matching the original's semantics.
         val saveUntilTarget by subgraphWithRetry<String, String>(
-            maxRetries = MAX_RETRIES + 1,
+            maxRetries = MAX_RETRIES,
             condition = {
                 val request = storage.getValue(requestKey)
                 val currentWatts = homePowerService.currentWatts()

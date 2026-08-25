@@ -41,7 +41,6 @@ class PowerSaveService(
 
     private val strategy = functionalStrategy<PowerSaveRequest, PowerSaveResult> { request ->
         require(request.targetWatts >= 0) { "Power-save target cannot be negative" }
-
         var response = requestLLM(initialPrompt(request))
         val toolCallTrace = mutableListOf<String>()
         // ⌄⌄⌄⌄⌄⌄⌄  instead, TODO("Implement power saving strategy").

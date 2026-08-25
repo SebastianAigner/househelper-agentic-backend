@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760" role="img" aria-labelledby="title description">
+  <title id="title">PowerSaveGraphService strategy graph</title>
+  <desc id="description">The power-save strategy prepares a prompt, runs an LLM and tool-call retry subgraph, validates household power consumption, and converts the retry result to a PowerSaveResult.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
+    </marker>
+    <style>
+      .node { fill: #fff; stroke: #000; stroke-width: 2; }
+      .terminal { fill: #000; stroke: #000; stroke-width: 2; }
+      .group { fill: none; stroke: #000; stroke-width: 2; stroke-dasharray: 9 8; }
+      .edge { fill: none; stroke: #000; stroke-width: 2; marker-end: url(#arrow); }
+      .label-bg { fill: #fff; }
+      .node-label { fill: #000; font: 600 18px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-anchor: middle; dominant-baseline: middle; }
+      .small-label { fill: #000; font: 14px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-anchor: middle; dominant-baseline: middle; }
+      .group-label { fill: #000; font: 600 17px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .caption { fill: #000; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    </style>
+  </defs>
+
+  <!-- Outer strategy -->
+  <circle class="terminal" cx="38" cy="92" r="10"/>
+  <path class="edge" d="M 48 92 H 94"/>
+
+  <rect class="node" x="95" y="57" width="240" height="70" rx="10"/>
+  <text class="node-label" x="215" y="92">preparePrompt</text>
+
+  <path class="edge" d="M 335 92 H 365 V 196 H 422"/>
+  <rect class="label-bg" x="337" y="59" width="51" height="25" rx="2"/>
+  <text class="small-label" x="363" y="72">String</text>
+
+  <rect class="group" x="390" y="34" width="850" height="670" rx="14"/>
+  <rect class="label-bg" x="414" y="21" width="400" height="27"/>
+  <text class="group-label" x="426" y="41">saveUntilTarget · retry subgraph</text>
+  <text class="caption" x="1199" y="58" text-anchor="end">maxRetries = 9</text>
+
+  <!-- Inner LLM/tool cycle -->
+  <circle class="terminal" cx="431" cy="196" r="8"/>
+  <path class="edge" d="M 439 196 H 474"/>
+
+  <rect class="node" x="475" y="161" width="220" height="70" rx="10"/>
+  <text class="node-label" x="585" y="196">callLLM</text>
+
+  <path class="edge" d="M 695 196 H 804"/>
+  <rect class="label-bg" x="702" y="183" width="95" height="25" rx="2"/>
+  <text class="small-label" x="749" y="196">tool calls</text>
+
+  <rect class="node" x="805" y="161" width="220" height="70" rx="10"/>
+  <text class="node-label" x="915" y="196">executeTool</text>
+
+  <path class="edge" d="M 915 231 V 329"/>
+  <rect class="label-bg" x="859" y="267" width="112" height="25" rx="2"/>
+  <text class="small-label" x="915" y="280">tool results</text>
+
+  <rect class="node" x="805" y="330" width="220" height="70" rx="10"/>
+  <text class="node-label" x="915" y="365">sendToolResult</text>
+
+  <path class="edge" d="M 1025 365 H 1100 V 196 H 1026"/>
+  <rect class="label-bg" x="1050" y="267" width="100" height="25" rx="2"/>
+  <text class="small-label" x="1100" y="280">more calls</text>
+
+  <!-- Text responses converge on deterministic validation -->
+  <path class="edge" d="M 585 231 V 459"/>
+  <rect class="label-bg" x="557" y="330" width="56" height="25" rx="2"/>
+  <text class="small-label" x="585" y="343">text</text>
+
+  <path class="edge" d="M 805 365 H 705 V 490 H 635"/>
+  <rect class="label-bg" x="720" y="352" width="56" height="25" rx="2"/>
+  <text class="small-label" x="748" y="365">text</text>
+
+  <path class="node" d="M 585 459 L 677 516 L 585 573 L 493 516 Z"/>
+  <text class="small-label" x="585" y="507">currentWatts</text>
+  <text class="small-label" x="585" y="527">≤ targetWatts?</text>
+
+  <!-- Retry feedback -->
+  <path class="edge" d="M 493 516 H 431 V 204"/>
+  <rect class="label-bg" x="374" y="360" width="116" height="60" rx="2"/>
+  <text class="small-label" x="432" y="375">no · retry</text>
+  <text class="caption" x="432" y="407" text-anchor="middle">feedback prompt</text>
+
+  <!-- Successful and exhausted outcomes converge -->
+  <path class="edge" d="M 677 516 H 1120"/>
+  <rect class="label-bg" x="742" y="503" width="136" height="25" rx="2"/>
+  <text class="small-label" x="810" y="516">yes · approve</text>
+
+  <path class="edge" d="M 585 573 V 635 H 1128 V 524"/>
+  <rect class="label-bg" x="679" y="622" width="184" height="25" rx="2"/>
+  <text class="small-label" x="771" y="635">9 retries exhausted</text>
+
+  <circle class="node" cx="1128" cy="516" r="8"/>
+  <path class="edge" d="M 1136 516 H 1271 V 92 H 1294"/>
+  <rect class="label-bg" x="1176" y="503" width="123" height="25" rx="2"/>
+  <text class="small-label" x="1237" y="516">retry result</text>
+
+  <rect class="node" x="1295" y="57" width="220" height="70" rx="10"/>
+  <text class="node-label" x="1405" y="92">toResult</text>
+
+  <path class="edge" d="M 1515 92 H 1564"/>
+  <circle class="terminal" cx="1575" cy="92" r="10"/>
+
+  <text class="caption" x="1405" y="145" text-anchor="middle">PowerSaveResult</text>
+</svg>
