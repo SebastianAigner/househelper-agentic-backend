@@ -11,7 +11,6 @@ import io.sebi.househelper.config.lunaAgentConfig
 import io.sebi.househelper.light.LightService
 import io.sebi.househelper.light.LightTools
 import io.sebi.househelper.weather.WeatherService
-import io.sebi.househelper.weather.WeatherTools
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 
@@ -44,7 +43,6 @@ class ChatService(
     """.trimIndent()
 
     private val toolRegistry = ToolRegistry {
-        tools(WeatherTools(weatherService).asTools()) // RM
         tools(LightTools(lightService).asTools())
         tools(ApplianceTools(applianceService).asTools())
     }

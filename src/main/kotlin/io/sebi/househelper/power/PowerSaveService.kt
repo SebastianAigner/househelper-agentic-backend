@@ -40,84 +40,8 @@ class PowerSaveService(
     }
 
     private val strategy = functionalStrategy<PowerSaveRequest, PowerSaveResult> { request ->
-        require(request.targetWatts >= 0) { "Power-save target cannot be negative" }
-        var response = requestLLM(initialPrompt(request))
-        val toolCallTrace = mutableListOf<String>()
-        // ⌄⌄⌄⌄⌄⌄⌄  instead, TODO("Implement power saving strategy").
-        var toolIterations = 0
-        var retries = 0
-        var powerDrawReported = false
-        while (true) {
-            var toolCalls = getToolCalls(response)
-            while (toolCalls.isNotEmpty()) {
-                check(++toolIterations <= MAX_TOOL_ITERATIONS) { "Agent exceeded the tool-call limit" }
-                toolCallTrace += toolCalls.map { "[Tool] ${it.tool} ${it.args}" }
-                response = sendToolResults(executeTools(toolCalls))
-                toolCalls = getToolCalls(response)
-                powerDrawReported = false
-            }
-
-            val currentWatts = homePowerService.currentWatts()
-            when {
-                currentWatts <= request.targetWatts && !powerDrawReported -> {
-                    powerDrawReported = true
-                    response = requestLLM(successValidationPrompt(currentWatts, request.targetWatts))
-                }
-
-                currentWatts <= request.targetWatts || retries == MAX_RETRIES ->
-                    return@functionalStrategy PowerSaveResult(
-                        success = currentWatts <= request.targetWatts,
-                        targetWatts = request.targetWatts,
-                        currentWatts = currentWatts,
-                        retries = retries,
-                        response = (toolCallTrace + response.textContent())
-                            .filter(String::isNotBlank)
-                            .joinToString(separator = "\n"),
-                    )
-
-                else -> {
-                    retries++
-                    response = requestLLM(failedValidationPrompt(request, currentWatts, retries))
-                }
-            }
-        }
-
-        error("Power-save strategy loop terminated unexpectedly")
-        // ⌃⌃⌃⌃⌃⌃⌃
+        TODO("Implement power saving strategy")
     }
-
-    // ⌄⌄⌄⌄⌄⌄⌄
-    private val minimalStrategy = functionalStrategy<PowerSaveRequest, PowerSaveResult> { request ->
-        require(request.targetWatts >= 0) { "Power-save target cannot be negative" }
-
-        var response = requestLLM(initialPrompt(request))
-        while (true) {
-            var toolCalls = getToolCalls(response)
-            while (toolCalls.isNotEmpty()) {
-                response = sendToolResults(executeTools(toolCalls))
-                toolCalls = getToolCalls(response)
-            }
-
-            val currentWatts = homePowerService.currentWatts()
-            if (currentWatts <= request.targetWatts) {
-                return@functionalStrategy PowerSaveResult(
-                    true,
-                    request.targetWatts,
-                    currentWatts,
-                    0,
-                    response.textContent()
-                )
-            }
-
-            response = requestLLM(
-                "The home currently draws $currentWatts W, which is above the ${request.targetWatts} W target. " +
-                        "Take additional energy-saving actions now."
-            )
-        }
-
-        error("Power-save strategy loop terminated unexpectedly")
-    }
-    // ⌃⌃⌃⌃⌃⌃⌃
 
     private val agent = AIAgent(
         promptExecutor = executor,
